@@ -1,0 +1,18 @@
+# -*- mode: gitignore; -*-
+*~
+\#*\#
+.\#*
+
+# Org-mode
+.org-id-locations
+*_archive
+
+# flymake-mode
+*_flymake.*
+
+# eshell files
+/eshell/history
+/eshell/lastdir
+
+# data files
+data/
