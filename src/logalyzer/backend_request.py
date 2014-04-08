@@ -3,6 +3,6 @@
 
 class BackendRequest(object):
 
-    def __init__(self, replica_id, url):
-        self.replica_id = replica_id
+    def __init__(self, replica_set_id, url):
+        self.replica_set_id = replica_set_id
         self.url = url

@@ -37,7 +37,7 @@ class Analyzer(object):
         Get specified number of slowes requests. Returns list of tuples (request_id, duration)
         """
 
-        return heapq.nlargest(10, self.request_times, key=itemgetter(1))
+        return heapq.nlargest(number, self.request_times, key=itemgetter(1))
 
     def extract_params(self, raw_line):
         """

@@ -16,8 +16,10 @@ class ClientRequest(object):
     @property
     def duration(self):
         """
-        Request duration
+        Request duration, None if request not finished
         """
+        if self.finish_time is None:
+            return
 
         return self.finish_time - self.start_time
 
