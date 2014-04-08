@@ -2,7 +2,8 @@
 import heapq
 from operator import itemgetter
 
-from client_request import ClientRequest
+from requests import ClientRequest
+from stats import ReplicaSetStat
 from utils import heap_percentile
 
 
@@ -13,6 +14,8 @@ class Analyzer(object):
 
         self.request_times = []
         self.open_requests = {}
+
+        self.backend_stats = {}
 
         if process:
             self.process()
@@ -64,12 +67,43 @@ class Analyzer(object):
         if event == 'FinishRequest':
             self.finish_request(timestamp, request_id)
 
+        if event == 'BackendConnect':
+            replica_set_id, request_url = additional_params
+            replica_set_id = int(replica_set_id)
+            self.backend_connect(timestamp, request_id, replica_set_id, request_url)
+
+        if event == 'BackendError':
+            replica_set_id, error_code = additional_params
+            replica_set_id = int(replica_set_id)
+
+            self.backend_error(timestamp, request_id, replica_set_id, error_code)
+
     def start_request(self, timestamp, request_id):
         """
         Process StartRequest event
         """
 
         self.open_requests[request_id] = ClientRequest(request_id, timestamp)
+
+    def backend_connect(self, timestamp, request_id, replica_set_id, request_url):
+        """
+        Process BackendConnect event
+        """
+
+        self.open_requests[request_id].backend_connect(replica_set_id, request_url)
+
+        if replica_set_id not in self.backend_stats:
+            self.backend_stats[replica_set_id] = ReplicaSetStat(replica_set_id)
+        self.backend_stats[replica_set_id].backend_connect(request_url)
+
+    def backend_error(self, timestamp, request_id, replica_set_id, error):
+        """
+        Process BackendError event
+        """
+        request_url = self.open_requests[request_id].last_request_url(replica_set_id)
+        self.open_requests[request_id].backend_error(replica_set_id)
+
+        self.backend_stats[replica_set_id].backend_error(request_url, error)
 
     def finish_request(self, timestamp, request_id):
         """
