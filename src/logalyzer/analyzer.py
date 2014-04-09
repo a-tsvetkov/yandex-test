@@ -113,9 +113,11 @@ class Analyzer(object):
         """
         Process BackendError event
         """
-        backend_host = self.open_requests[request_id].last_request_host(replica_set_id)
-        self.open_requests[request_id].backend_error(replica_set_id)
 
+        request = self.open_requests[request_id]
+        backend_host = request.last_request_host(replica_set_id)
+
+        request.backend_error(replica_set_id)
         self.backend_stats[replica_set_id].backend_error(backend_host, error)
 
     def backend_ok(self, timestamp, request_id, replica_set_id):

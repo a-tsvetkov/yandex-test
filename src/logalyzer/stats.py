@@ -1,8 +1,6 @@
 # -*- coding:utf-8 -*-
 from collections import defaultdict
 
-from utils import get_host
-
 
 class ReplicaSetStat(object):
 
@@ -65,7 +63,7 @@ class BackendStat(object):
 
     def add_error(self, error):
         """
-        Logs backeb error
+        Logs backend error
         """
 
         self.errors[error] += 1
