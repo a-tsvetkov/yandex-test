@@ -26,6 +26,8 @@ def main():
                 for name, count in backend_stats.errors.iteritems():
                     print "\t\t\t{0}: {1}".format(name, count)
 
+    print "Number of incomlete requests: {0}".format(analyzer.incomplete_request_count)
+
 
 if __name__ == "__main__":
     main()

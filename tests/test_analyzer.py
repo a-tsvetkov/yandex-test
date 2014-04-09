@@ -6,26 +6,38 @@ from StringIO import StringIO
 from logalyzer import Analyzer, stats
 from logalyzer.requests import ClientRequest
 
-TEST_DATA = """1390950160808136	0	StartRequest
-1390950160810164	0	BackendConnect	0	http://backend0-001.yandex.ru:1963/search?
-1390950160810179	0	BackendConnect	1	http://backend1-001.yandex.ru:1085/search?
-1390950160841530	0	BackendRequest	0
-1390950160938308	0	BackendRequest	1
-1390950160948308	0	BackendOk	1
-1390950161841530	0	BackendError	0	Request Timeout
-1390950161842604	0	BackendConnect	0	http://backend0-002.yandex.ru:1126/search?
-1390950161928218	0	BackendRequest	0
-1390950162464394	0	BackendOk	0
-1390950162475798	0	StartMerge
-1390950162536865	0	StartSendResult
-1390950162890134	0	FinishRequest
+FIXTURE = """1390672572320679	0	StartRequest
+1390672572331061	0	BackendConnect	1	http://backend1-001.yandex.ru:1495/search?
+1390672572331534	0	BackendConnect	0	http://backend0-001.yandex.ru:1848/search?
+1390672572331939	0	BackendConnect	2	http://backend2-001.yandex.ru:1789/search?
+1390672572332019	0	BackendConnect	4	http://backend4-002.yandex.ru:1445/search?
+1390672572332896	0	BackendConnect	3	http://backend3-002.yandex.ru:1433/search?
+1390672572370445	0	BackendRequest	2
+1390672572371253	0	BackendRequest	4
+1390672572376201	0	BackendRequest	0
+1390672572381722	0	BackendRequest	1
+1390672572389323	0	BackendRequest	3
+1390672572823197	0	BackendOk	2
+1390672572832417	0	BackendOk	0
+1390672572871253	0	BackendError	4	ParseFromStream error
+1390672572881722	0	BackendError	1	Input/output error
+1390672572882606	0	BackendOk	3
+1390672572882729	0	BackendConnect	4	http://backend4-001.yandex.ru:1002/search?
+1390672572891737	0	BackendConnect	1	http://backend1-001.yandex.ru:1495/search?
+1390672572901758	0	BackendRequest	1
+1390672572915564	0	BackendRequest	4
+1390672573269124	0	BackendOk	1
+1390672573415564	0	BackendError	4	Connection reset by peer
+1390672573425081	0	StartMerge
+1390672573483245	0	StartSendResult
+1390672574005831	0	FinishRequest
 """
 
 
 class AnalyzerTestCase(unittest.TestCase):
 
     def setUp(self):
-        self.file_object = StringIO(TEST_DATA)
+        self.file_object = StringIO(FIXTURE)
 
     def test_init_not_process(self):
         analyzer = Analyzer(self.file_object)
@@ -35,7 +47,7 @@ class AnalyzerTestCase(unittest.TestCase):
     def test_init_process(self):
         analyzer = Analyzer(self.file_object, process=True)
 
-        self.assertEqual(analyzer.request_times, [(0, 2081998)])
+        self.assertEqual(analyzer.request_times, [(0, 1685152)])
 
     def test_extract_params(self):
         line = "1234	4	TestEvent	14	http://test.url/search?"
@@ -49,28 +61,39 @@ class AnalyzerTestCase(unittest.TestCase):
     def test_backend_stats(self):
         analyzer = Analyzer(self.file_object, process=True)
 
-        self.assertEqual(analyzer.backend_stats.keys(), [0, 1])
+        self.assertEqual(analyzer.backend_stats.keys(), [0, 1, 2, 3, 4])
         self.assertEqual(
-            analyzer.backend_stats[0].backends,
-            ['backend0-001.yandex.ru:1963', 'backend0-002.yandex.ru:1126']
+            analyzer.backend_stats[4].backends,
+            ['backend4-001.yandex.ru:1002', 'backend4-002.yandex.ru:1445']
         )
 
-        backend1 = analyzer.backend_stats[0].get_backend('backend0-001.yandex.ru:1963')
+        backend1 = analyzer.backend_stats[0].get_backend('backend0-001.yandex.ru:1848')
         self.assertEqual(backend1.request_count, 1)
-        self.assertEqual(dict(backend1.errors), {'Request Timeout': 1})
 
-        backend2 = analyzer.backend_stats[0].get_backend('backend0-002.yandex.ru:1126')
-        self.assertEqual(backend2.request_count, 1)
+        self.assertEqual(len(analyzer.backend_stats[1].backends), 1)
+        backend2 = analyzer.backend_stats[1].get_backend('backend1-001.yandex.ru:1495')
+        self.assertEqual(backend2.request_count, 2)
+        self.assertEqual(dict(backend2.errors), {'Input/output error': 1})
 
-        backend3 = analyzer.backend_stats[1].get_backend('backend1-001.yandex.ru:1085')
+        self.assertEqual(len(analyzer.backend_stats[4].backends), 2)
+        backend3 = analyzer.backend_stats[4].get_backend('backend4-001.yandex.ru:1002')
         self.assertEqual(backend3.request_count, 1)
+        self.assertEqual(
+            dict(backend3.errors),
+            {'Connection reset by peer': 1}
+        )
+
+    def test_incomplete_requests(self):
+        analyzer = Analyzer(self.file_object, process=True)
+
+        self.assertEqual(analyzer.incomplete_request_count, 1)
 
     def test_process(self):
         analyzer = Analyzer(self.file_object)
         self.assertEqual(analyzer.request_times, [])
 
         analyzer.process()
-        self.assertEqual(analyzer.request_times, [(0, 2081998)])
+        self.assertEqual(analyzer.request_times, [(0, 1685152)])
 
     def test_get_request_percentile(self):
         analyzer = Analyzer(StringIO())
@@ -148,6 +171,7 @@ class AnalyzerTestCase(unittest.TestCase):
             {'TestError': 1}
         )
         self.assertEqual(len(analyzer.open_requests[33].pending_requests), 0)
+        self.assertEqual(analyzer.open_requests[33].incomplete, True)
 
     def test_process_entry_finish_request(self):
         analyzer = Analyzer(StringIO())
@@ -162,3 +186,14 @@ class AnalyzerTestCase(unittest.TestCase):
         analyzer.process_entry(1234, 33, 'StartRequest', [])
         analyzer.process_entry(1234, 33, 'BackendConnect', [3, 'http://test.host1:1234/path/to/resource?query'])
         analyzer.process_entry(1234, 33, 'BackendOk', [3])
+
+        self.assertEqual(len(analyzer.open_requests[33].pending_requests), 0)
+        self.assertEqual(analyzer.open_requests[33].incomplete, False)
+
+    def test_start_merge(self):
+        analyzer = Analyzer(StringIO())
+        analyzer.process_entry(1234, 33, 'StartRequest', [])
+        analyzer.process_entry(1234, 33, 'BackendConnect', [3, 'http://test.host1:1234/path/to/resource?query'])
+        analyzer.process_entry(1234, 33, 'StartMertge', [])
+
+        self.assertEqual(len(analyzer.open_requests[33].pending_requests), 1)

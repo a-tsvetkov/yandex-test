@@ -16,6 +16,7 @@ class Analyzer(object):
         self.open_requests = {}
 
         self.backend_stats = {}
+        self.incomplete_request_count = 0
 
         if process:
             self.process()
@@ -78,6 +79,15 @@ class Analyzer(object):
 
             self.backend_error(timestamp, request_id, replica_set_id, error_code)
 
+        if event == 'BackendOk':
+            replica_set_id = additional_params[0]
+            replica_set_id = int(replica_set_id)
+
+            self.backend_ok(timestamp, request_id, replica_set_id)
+
+        if event == 'StartMerge':
+            self.start_merge(timestamp, request_id)
+
     def start_request(self, timestamp, request_id):
         """
         Process StartRequest event
@@ -109,7 +119,11 @@ class Analyzer(object):
         self.backend_stats[replica_set_id].backend_error(backend_host, error)
 
     def backend_ok(self, timestamp, request_id, replica_set_id):
-        pass  # TODO: Process successfull response
+        self.open_requests[request_id].backend_ok(replica_set_id)
+
+    def start_merge(self, timestamp, request_id):
+        if self.open_requests[request_id].incomplete:
+            self.incomplete_request_count += 1
 
     def finish_request(self, timestamp, request_id):
         """
