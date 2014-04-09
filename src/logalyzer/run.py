@@ -2,13 +2,11 @@
 import argparse
 from analyzer import Analyzer
 
-parser = argparse.ArgumentParser()
-parser.add_argument("infile")
 
-request_times = []
-open_requests = {}
+def main():
+    parser = argparse.ArgumentParser()
+    parser.add_argument("infile")
 
-if __name__ == "__main__":
     args = parser.parse_args()
     with open(args.infile, "r") as infile:
         analyzer = Analyzer(infile, process=True)
@@ -27,3 +25,7 @@ if __name__ == "__main__":
                 print "\t\tErrors:"
                 for name, count in backend_stats.errors.iteritems():
                     print "\t\t\t{0}: {1}".format(name, count)
+
+
+if __name__ == "__main__":
+    main()
