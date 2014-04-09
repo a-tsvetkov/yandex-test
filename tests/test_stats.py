@@ -23,20 +23,9 @@ class ReplicaSetStatTestCase(unittest.TestCase):
 
         self.assertEqual(rs_stat.get_backend('test.host1').host, 'test.host1')
 
-    def test_get_backend_for_url(self):
-        rs_stat = stats.ReplicaSetStat(0)
-
-        rs_stat.add_backend('test.host1:1234')
-        rs_stat.add_backend('test.host1:4321')
-
-        self.assertEqual(
-            rs_stat.get_backend_for_url('http://test.host1:1234/path/to/resource?query').host,
-            'test.host1:1234'
-        )
-
     def test_new_backend_connect(self):
         rs_stat = stats.ReplicaSetStat(0)
-        rs_stat.backend_connect('http://test.host:1234/path/to/resource?query')
+        rs_stat.backend_connect('test.host:1234')
 
         self.assertEqual(rs_stat.backends, ['test.host:1234'])
         self.assertEqual(rs_stat.get_backend('test.host:1234').request_count, 1)
@@ -46,7 +35,7 @@ class ReplicaSetStatTestCase(unittest.TestCase):
         rs_stat.add_backend('test.host:1234')
         rs_stat.get_backend('test.host:1234').request_count = 10
 
-        rs_stat.backend_connect('http://test.host:1234/path/to/resource?query')
+        rs_stat.backend_connect('test.host:1234')
 
         self.assertEqual(rs_stat.backends, ['test.host:1234'])
         self.assertEqual(rs_stat.get_backend('test.host:1234').request_count, 11)
@@ -62,6 +51,6 @@ class ReplicaSetStatTestCase(unittest.TestCase):
         rs_stat = stats.ReplicaSetStat(0)
         rs_stat.add_backend('test.host:1234')
 
-        rs_stat.backend_error('http://test.host:1234/path/to/resource?query', 'TestError')
+        rs_stat.backend_error('test.host:1234', 'TestError')
 
         self.assertEqual(rs_stat.get_backend('test.host:1234').errors['TestError'], 1)

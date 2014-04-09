@@ -89,7 +89,7 @@ class AnalyzerTestCase(unittest.TestCase):
             [(99, 199), (98, 198), (97, 197), (96, 196), (95, 195)]
         )
 
-    def test_get_slowest_requests_mode_tan_have(self):
+    def test_get_slowest_requests_more_tan_have(self):
         analyzer = Analyzer(StringIO())
         analyzer.request_times = [(i, i + 100) for i in xrange(3)]
         random.shuffle(analyzer.request_times)
@@ -116,8 +116,8 @@ class AnalyzerTestCase(unittest.TestCase):
         self.assertEqual(analyzer.backend_stats[3].backends, ['test.host1:1234'])
         self.assertEqual(len(analyzer.open_requests[33].pending_requests), 1)
         self.assertEqual(
-            analyzer.open_requests[33].pending_requests[3].url,
-            'http://test.host1:1234/path/to/resource?query'
+            analyzer.open_requests[33].pending_requests[3].host,
+            'test.host1:1234'
         )
 
     def test_process_entry_existing_backend_connect(self):
@@ -133,8 +133,8 @@ class AnalyzerTestCase(unittest.TestCase):
         self.assertEqual(analyzer.backend_stats[3].backends, ['test.host:1234'])
         self.assertEqual(len(analyzer.open_requests[33].pending_requests), 1)
         self.assertEqual(
-            analyzer.open_requests[33].pending_requests[3].url,
-            'http://test.host:1234/path/to/resource?query'
+            analyzer.open_requests[33].pending_requests[3].host,
+            'test.host:1234'
         )
 
     def test_process_entry_backend_error(self):
@@ -156,3 +156,9 @@ class AnalyzerTestCase(unittest.TestCase):
         analyzer.process_entry(2355, 33, 'FinishRequest', [])
         self.assertNotIn(33, analyzer.open_requests)
         self.assertEqual(analyzer.request_times, [(33, 10)])
+
+    def test_backend_ok(self):
+        analyzer = Analyzer(StringIO())
+        analyzer.process_entry(1234, 33, 'StartRequest', [])
+        analyzer.process_entry(1234, 33, 'BackendConnect', [3, 'http://test.host1:1234/path/to/resource?query'])
+        analyzer.process_entry(1234, 33, 'BackendOk', [3])

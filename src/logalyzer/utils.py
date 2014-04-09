@@ -1,6 +1,6 @@
 # -*- coding:utf-8 -*-
 import heapq
-from urlparse import urlparse
+from urlparse import urlsplit
 
 
 def heap_percentile(p, heap, key=None):
@@ -9,4 +9,4 @@ def heap_percentile(p, heap, key=None):
 
 
 def get_host(url):
-    return urlparse(url).netloc
+    return urlsplit(url).netloc

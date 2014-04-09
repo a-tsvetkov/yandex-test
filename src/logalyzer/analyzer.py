@@ -4,7 +4,7 @@ from operator import itemgetter
 
 from requests import ClientRequest
 from stats import ReplicaSetStat
-from utils import heap_percentile
+import utils
 
 
 class Analyzer(object):
@@ -33,11 +33,11 @@ class Analyzer(object):
         Returns specified percentile of request duratgion in processed log
         """
 
-        return heap_percentile(percentile, self.request_times, key=itemgetter(1))[1]
+        return utils.heap_percentile(percentile, self.request_times, key=itemgetter(1))[1]
 
     def get_slowest_requests(self, number):
         """
-        Get specified number of slowes requests. Returns list of tuples (request_id, duration)
+        Get specified number of slowest requests. Returns list of tuples (request_id, duration)
         """
 
         return heapq.nlargest(number, self.request_times, key=itemgetter(1))
@@ -88,22 +88,28 @@ class Analyzer(object):
     def backend_connect(self, timestamp, request_id, replica_set_id, request_url):
         """
         Process BackendConnect event
+
+        Extract host here for optimisation puropose
         """
 
-        self.open_requests[request_id].backend_connect(replica_set_id, request_url)
+        host = utils.get_host(request_url)
+        self.open_requests[request_id].backend_connect(replica_set_id, host)
 
         if replica_set_id not in self.backend_stats:
             self.backend_stats[replica_set_id] = ReplicaSetStat(replica_set_id)
-        self.backend_stats[replica_set_id].backend_connect(request_url)
+        self.backend_stats[replica_set_id].backend_connect(host)
 
     def backend_error(self, timestamp, request_id, replica_set_id, error):
         """
         Process BackendError event
         """
-        request_url = self.open_requests[request_id].last_request_url(replica_set_id)
+        backend_host = self.open_requests[request_id].last_request_host(replica_set_id)
         self.open_requests[request_id].backend_error(replica_set_id)
 
-        self.backend_stats[replica_set_id].backend_error(request_url, error)
+        self.backend_stats[replica_set_id].backend_error(backend_host, error)
+
+    def backend_ok(self, timestamp, request_id, replica_set_id):
+        pass  # TODO: Process successfull response
 
     def finish_request(self, timestamp, request_id):
         """

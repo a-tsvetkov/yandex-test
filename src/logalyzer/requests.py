@@ -3,9 +3,9 @@
 
 class BackendRequest(object):
 
-    def __init__(self, replica_set_id, url):
+    def __init__(self, replica_set_id, host):
         self.replica_set_id = replica_set_id
-        self.url = url
+        self.host = host
 
 
 class ClientRequest(object):
@@ -28,20 +28,20 @@ class ClientRequest(object):
 
         return self.finish_time - self.start_time
 
-    def last_request_url(self, replica_set_id):
+    def last_request_host(self, replica_set_id):
         """
-        Get url for last request made to specified replica set
+        Get host for last request made to specified replica set
         """
 
-        return self.pending_requests[replica_set_id].url
+        return self.pending_requests[replica_set_id].host
 
-    def backend_connect(self, replica_set_id, url):
+    def backend_connect(self, replica_set_id, host):
         """
         BackendConnect event for current request
         """
-
+        request = BackendRequest(replica_set_id, host)
         self.replica_set_ids.add(replica_set_id)
-        self.pending_requests[replica_set_id] = BackendRequest(replica_set_id, url)
+        self.pending_requests[replica_set_id] = request
 
     def backend_error(self, replica_set_id):
         """

@@ -26,30 +26,23 @@ class ReplicaSetStat(object):
 
         return self.backends_dict.get(host)
 
-    def get_backend_for_url(self, url):
-        """
-        Return backend for request url
-        """
-
-        return self.get_backend(get_host(url))
-
-    def backend_connect(self, url):
+    def backend_connect(self, host):
         """
         Processes BackendConnect event for this replica set
         """
 
-        backend = self.get_backend_for_url(url)
+        backend = self.get_backend(host)
         if backend is None:
-            backend = self.add_backend(get_host(url))
+            backend = self.add_backend(host)
 
         backend.request_count += 1
 
-    def backend_error(self, url, error):
+    def backend_error(self, host, error):
         """
         Logs an error to corresponding backend stat
         """
 
-        backend = self.get_backend_for_url(url)
+        backend = self.get_backend(host)
         backend.add_error(error)
 
     def add_backend(self, host):

@@ -19,12 +19,12 @@ class ClientRequestTestCase(unittest.TestCase):
 
     def test_backend_connect(self):
         request = ClientRequest(1, 1234)
-        request.backend_connect(3, 'http://test.com/path/to/host')
+        request.backend_connect(3, 'test.com')
 
         self.assertEqual(request.replica_set_ids, set([3]))
         self.assertEqual(len(request.pending_requests), 1)
         self.assertEqual(request.pending_requests[3].replica_set_id, 3)
-        self.assertEqual(request.pending_requests[3].url, 'http://test.com/path/to/host')
+        self.assertEqual(request.pending_requests[3].host, 'test.com')
 
     def test_backend_error(self):
         request = ClientRequest(1, 1234)
@@ -33,8 +33,8 @@ class ClientRequestTestCase(unittest.TestCase):
 
         self.assertEqual(len(request.pending_requests), 0)
 
-    def test_last_request_url(self):
+    def test_last_request_host(self):
         request = ClientRequest(1, 1234)
-        request.backend_connect(3, 'http://test.com/path/to/host')
+        request.backend_connect(3, 'test.com')
 
-        self.assertEqual(request.last_request_url(3), 'http://test.com/path/to/host')
+        self.assertEqual(request.last_request_host(3), 'test.com')
