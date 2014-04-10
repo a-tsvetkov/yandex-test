@@ -20,3 +20,5 @@ data/
 .coverage
 /build/
 *.egg-info
+*.c
+*.so
